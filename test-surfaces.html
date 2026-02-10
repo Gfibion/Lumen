@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LUMEN v0.1 — Test Suite</title>
+
+  <!-- LUMEN runtime -->
+  <script src="../lumen.js"></script>
+
+  <style>
+    /* ─── Test harness styles — NOT LUMEN ─────────────────────────────────── */
+    /* These styles are for the test page frame only.
+       All UI elements inside .lumen-mount are rendered by LUMEN. */
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #07070f;
+      --bg2:     #0d0d1a;
+      --border:  rgba(255,255,255,0.07);
+      --text:    #c8d0e0;
+      --label:   #4a5568;
+      --accent:  #3b82f6;
+      --pass:    #22c55e;
+      --font:    'Courier New', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      padding: 48px 32px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* ─── Page header ─────────────────────────────────────────────────────── */
+    .page-header {
+      margin-bottom: 56px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 32px;
+    }
+    .page-header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #f1f5f9;
+    }
+    .page-header .subtitle {
+      font-size: 14px;
+      color: var(--label);
+      margin-top: 8px;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(59,130,246,0.15);
+      border: 1px solid rgba(59,130,246,0.3);
+      color: var(--accent);
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 12px;
+      vertical-align: middle;
+      letter-spacing: 1px;
+    }
+
+    /* ─── Test sections ────────────────────────────────────────────────────── */
+    .test-section {
+      margin-bottom: 64px;
+    }
+    .test-section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .test-number {
+      font-size: 11px;
+      color: var(--label);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .test-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+    .test-desc {
+      font-size: 13px;
+      color: var(--label);
+      margin-bottom: 20px;
+      line-height: 1.7;
+    }
+
+    /* ─── Two-column layout: code | render ────────────────────────────────── */
+    .test-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 700px) {
+      .test-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ─── Code panel ───────────────────────────────────────────────────────── */
+    .code-panel {
+      background: #0a0a14;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .code-panel-header {
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 16px;
+      font-size: 11px;
+      color: var(--label);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .code-panel pre {
+      padding: 20px;
+      font-size: 12.5px;
+      line-height: 1.7;
+      color: #a8b8d0;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    /* Syntax highlight classes */
+    .kw  { color: #60a5fa; }  /* keyword: surface, material, text */
+    .nm  { color: #f472b6; }  /* name identifier */
+    .pr  { color: #94a3b8; }  /* property key */
+    .vl  { color: #86efac; }  /* value */
+    .fn  { color: #fbbf24; }  /* function: solid(), gradient() */
+    .cm  { color: #374151; font-style: italic; }  /* comment */
+    .st  { color: #f9a8d4; }  /* string */
+    .pu  { color: #6b7280; }  /* punctuation { } : */
+
+    /* ─── Render panel ─────────────────────────────────────────────────────── */
+    .render-panel {
+      background: #0a0a14;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .render-panel-header {
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 16px;
+      font-size: 11px;
+      color: var(--label);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .render-area {
+      padding: 24px;
+      min-height: 120px;
+      display: flex;
+      align-items: flex-start;
+    }
+    .render-area.centered {
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ─── Divider ──────────────────────────────────────────────────────────── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 48px 0;
+    }
+
+    /* ─── Status indicator ─────────────────────────────────────────────────── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      font-size: 11px;
+      color: var(--label);
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--pass);
+      box-shadow: 0 0 6px var(--pass);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ════════════════════════════════════════════════════════
+       PAGE HEADER
+       ════════════════════════════════════════════════════════ -->
+  <div class="page-header">
+    <h1>LUMEN Test Suite <span class="badge">v0.1 FOUNDATION</span></h1>
+    <p class="subtitle">
+      tests/test-surfaces.html — All core language features exercised top to bottom.
+      Left column: LUMEN source. Right column: compiled render output.
+    </p>
+  </div>
+
+
+  <!-- ════════════════════════════════════════════════════════
+       TEST 1: BASIC SURFACE
+       ════════════════════════════════════════════════════════ -->
+  <div class="test-section">
+    <div class="test-section-header">
+      <span class="test-number">Test 01</span>
+      <span class="test-title">Basic Surface — solid material</span>
+    </div>
+    <p class="test-desc">
+      The simplest valid LUMEN program. One surface with explicit dimensions
+      and a solid color material. Compiles to a single &lt;div&gt; with CSS.
+    </p>
+
+    <div class="test-grid">
+
+      <div class="code-panel">
+        <div class="code-panel-header">LUMEN source</div>
+        <pre><span class="kw">surface</span> <span class="nm">basic</span> <span class="pu">{</span>
+  <span class="pr">width</span><span class="pu">:</span>    <span class="vl">280px</span>
+  <span class="pr">height</span><span class="pu">:</span>   <span class="vl">120px</span>
+  <span class="pr">material</span><span class="pu">:</span> <span class="fn">solid</span><span class="pu">(</span><span class="vl">#1a1a2e</span><span class="pu">)</span>
+  <span class="pr">radius</span><span class="pu">:</span>   <span class="vl">10px</span>
+<span class="pu">}</span></pre>
+      </div>
+
+      <div class="render-panel">
+        <div class="render-panel-header">Rendered output</div>
+        <div class="render-area" id="test-01"></div>
+      </div>
+
+    </div>
+    <div class="status-bar"><span class="status-dot"></span> surface · material · radius</div>
+  </div>
+
+  <script type="text/lumen" target="test-01">
+    surface basic {
+      width:    280px
+      height:   120px
+      material: solid(#1a1a2e)
+      radius:   10px
+    }
+  </script>
+
+
+  <hr class="divider">
+
+
+  <!-- ════════════════════════════════════════════════════════
+       TEST 2: MATERIAL FUNCTIONS
+       ════════════════════════════════════════════════════════ -->
+  <div class="test-section">
+    <div class="test-section-header">
+      <span class="test-number">Test 02</span>
+      <span class="test-title">Material Functions — solid, gradient, radial, glass, noise</span>
+    </div>
+    <p class="test-desc">
+      All five built-in material functions rendered side by side inside a row layout.
+      Each surface uses a different fill strategy.
+    </p>
+
+    <div class="test-grid">
+
+      <div class="code-panel">
+        <div class="code-panel-header">LUMEN source</div>
+        <pre><span class="kw">surface</span> <span class="nm">swatches</span> <span class="pu">{</span>
+  <span class="pr">width</span><span class="pu">:</span>   <span class="vl">100%</span>
+  <span class="pr">height</span><span class="pu">:</span>  <span class="vl">80px</span>
+  <span class="pr">layout</span><span class="pu">:</span>  <span class="vl">row</span>
+  <span class="pr">gap</span><span class="pu">:</span>     <span class="vl">8px</span>
+
+  <span class="kw">surface</span> <span class="nm">s1</span> <span class="pu">{</span>
+    <span class="pr">width</span><span class="pu">:</span>    <span class="vl">fill</span>
+    <span class="pr">height</span><span class="pu">:</span>   <span class="vl">fill</span>
+    <span class="pr">material</span><span class="pu">:</span> <span class="fn">solid</span><span class="pu">(</span><span class="vl">#1e3a5f</span><span class="pu">)</span>
+    <span class="pr">radius</span><span class="pu">:</span>   <span class="vl">6px</span>
+  <span class="pu">}</span>
+  <span class="kw">surface</span> <span class="nm">s2</span> <span class="pu">{</span>
+    <span class="pr">width</span><span class="pu">:</span>    <span class="vl">fill</span>
+    <span class="pr">height</span><span class="pu">:</span>   <span class="vl">fill</span>
+    <span class="pr">material</span><span class="pu">:</span> <span class="fn">gradient</span><span class="pu">(</span><span class="vl">#0f0f1a, #3b82f6</span><span class="pu">)</span>
+    <span class="pr">radius</span><span class="pu">:</span>   <span class="vl">6px</span>
+  <span class="pu">}</span>
+  <span class="kw">surface</span> <span class="nm">s3</span> <span class="pu">{</span>
+    <span class="pr">width</span><span class="pu">:</span>    <span class="vl">fill</span>
+    <span class="pr">height</span><span class="pu">:</span>   <span class="vl">fill</span>
+    <span class="pr">material</span><span class="pu">:</span> <span class="fn">radial</span><span class="pu">(</span><span class="vl">#3b82f6, #0f0f1a</span><span class="pu">)</span>
+    <span class="pr">radius</span><span class="pu">:</span>   <span class="vl">6px</span>
+  <span class="pu">}</span>
+  <span class="kw">surface</span> <span class="nm">s4</span> <span class="pu">{</span>
+    <span class="pr">width</span><span class="pu">:</span>    <span class="vl">fill</span>
+    <span class="pr">height</span><span class="pu">:</span>   <span class="vl">fill</span>
+    <span class="pr">material</span><span class="pu">:</span> <span class="fn">glass</span><span class="pu">(</span><span class="vl">#3b82f6, 0.15</span><span class="pu">)</span>
+    <span class="pr">radius</span><span class="pu">:</span>   <span class="vl">6px</span>
+  <span class="pu">}</span>
+  <span class="kw">surface</span> <span class="nm">s5</span> <span class="pu">{</span>
+    <span class="pr">width</span><span class="pu">:</span>    <span class="vl">fill</span>
+    <span class="pr">height</span><span class="pu">:</span>   <span class="vl">fill</span>
+    <span class="pr">material</span><span class="pu">:</span> <span class="fn">noise</span><span class="pu">(</span><span class="vl">#1e3a5f</span><span class="pu">)</span>
+    <span class="pr">radius</span><span class="pu">:</span>   <span class="vl">6px</span>
+  <span class="pu">}</span>
+<span class="pu">}</span></pre>
+      </div>
+
+      <div class="render-panel">
+        <div class="render-panel-header">Rendered output</div>
+        <div class="render-area" id="test-02"></div>
+      </div>
+
+    </div>
+    <div class="status-bar"><span class="status-dot"></span> solid · gradient · radial · glass · noise</div>
+  </div>
+
+  <script type="text/lumen" target="test-02">
+    surface swatches {
+      width:  100%
+      height: 80px
+      layout: row
+      gap:    8px
+
+      surface s1 {
+        width:    fill
+        height:   fill
+        material: solid(#1e3a5f)
+        radius:   6px
+      }
+      surface s2 {
+        width:    fill
+        height:   fill
+        material: gradient(#0f0f1a, #3b82f6)
+        radius:   6px
+      }
+      surface s3 {
+        width:    fill
+        height:   fill
+        material: radial(#3b82f6, #0f0f1a)
+        radius:   6px
+      }
+      surface s4 {
+        width:    fill
+        height:   fill
+        material: glass(#3b82f6, 0.15)
+        radius:   6px
+      }
+      surface s5 {
+        width:    fill
+        height:   fill
+        material: noise(#1e3a5f)
+        radius:   6px
+      }
+    }
+  </script>
+
+
+  <hr class="divider">
+
+
+  <!-- ════════════════════════════════════════════════════════
+       TEST 3: NAMED MATERIALS + use:
+       ════════════════════════════════════════════════════════ -->
+  <div class="test-section">
+    <div class="test-section-header">
+      <span class="test-number">Test 03</span>
+      <span class="test-title">Named Materials — define once, use anywhere</span>
+    </div>
+    <p class="test-desc">
+      Two reusable materials defined at the top. Three surfaces apply them
+      via <code>use:</code>. Any surface using the same material name
+      receives identical styling.
+    </p>
+
+    <div class="test-grid">
+
+      <div class="code-panel">
+        <div class="code-panel-header">LUMEN source</div>
+        <pre><span class="cm">// Named material definitions</span>
+<span class="kw">material</span> <span class="nm">panel-dark</span> <span class="pu">{</span>
+  <span class="pr">color</span><span class="pu">:</span>   <span class="vl">#111827</span>
+  <span class="pr">radius</span><span class="pu">:</span>  <span class="vl">10px</span>
+  <span class="pr">border</span><span class="pu">:</span>  <span class="vl">1px solid rgba(255,255,255,0.06)</span>
+  <span class="pr">shadow</span><span class="pu">:</span>  <span class="vl">0 4px 24px rgba(0,0,0,0.4)</span>
+<span class="pu">}</span>
+
+<span class="kw">material</span> <span class="nm">panel-accent</span> <span class="pu">{</span>
+  <span class="pr">color</span><span class="pu">:</span>   <span class="vl">#1e3a5f</span>
+  <span class="pr">radius</span><span class="pu">:</span>  <span class="vl">10px</span>
+  <span class="pr">border</span><span class="pu">:</span>  <span class="vl">1px solid rgba(59,130,246,0.3)</span>
+<span class="pu">}</span>
+
+<span class="cm">// Three surfaces — two materials shared</span>
+<span class="kw">surface</span> <span class="nm">row</span> <span class="pu">{</span>
+  <span class="pr">width</span><span class="pu">:</span>  <span class="vl">100%</span>
+  <span class="pr">layout</span><span class="pu">:</span> <span class="vl">row</span>
+  <span class="pr">gap</span><span class="pu">:</span>    <span class="vl">12px</span>
+
+  <span class="kw">surface</span> <span class="nm">a</span> <span class="pu">{</span>
+    <span class="pr">width</span><span class="pu">:</span>  <span class="vl">fill</span>
+    <span class="pr">height</span><span class="pu">:</span> <span class="vl">90px</span>
+    <span class="pr">use</span><span class="pu">:</span>    <span class="nm">panel-dark</span>
+  <span class="pu">}</span>
+  <span class="kw">surface</span> <span class="nm">b</span> <span class="pu">{</span>
+    <span class="pr">width</span><span class="pu">:</span>  <span class="vl">fill</span>
+    <span class="pr">height</span><span class="pu">:</span> <span class="vl">90px</span>
+    <span class="pr">use</span><span class="pu">:</span>    <span class="nm">panel-accent</span>
+  <span class="pu">}</span>
+  <span class="kw">surface</span> <span class="nm">c</span> <span class="pu">{</span>
+    <span class="pr">width</span><span class="pu">:</span>  <span class="vl">fill</span>
+    <span class="pr">height</span><span class="pu">:</span> <span class="vl">90px</span>
+    <span class="pr">use</span><span class="pu">:</span>    <span class="nm">panel-dark</span>
+  <span class="pu">}</span>
+<span class="pu">}</span></pre>
+      </div>
+
+      <div class="render-panel">
+        <div class="render-panel-header">Rendered output</div>
+        <div class="render-area" id="test-03"></div>
+      </div>
+
+    </div>
+    <div class="status-bar"><span class="status-dot"></span> material definition · use: · color property in material</div>
+  </div>
+
+  <script type="text/lumen" target="test-03">
+    material panel-dark {
+      color:  #111827
+      radius: 10px
+      border: 1px solid rgba(255,255,255,0.06)
+      shadow: 0 4px 24px rgba(0,0,0,0.4)
+    }
+
+    material panel-accent {
+      color:  #1e3a5f
+      radius: 10px
+      border: 1px solid rgba(59,130,246,0.3)
+    }
+
+    surface row {
+      width:  100%
+      layout: row
+      gap:    12px
+
+      surface a {
+        width:  fill
+        height: 90px
+        use:    panel-dark
+      }
+      surface b {
+        width:  fill
+        height: 90px
+        use:    panel-accent
+      }
+      surface c {
+        width:  fill
+        height: 90px
+        use:    panel-dark
+      }
+    }
+  </script>
+
+
+  <hr class="divider">
+
+
+  <!-- ════════════════════════════════════════════════════════
+       TEST 4: TEXT NODES + TYPOGRAPHY
+       ════════════════════════════════════════════════════════ -->
+  <div class="test-section">
+    <div class="test-section-header">
+      <span class="test-number">Test 04</span>
+      <span class="test-title">Text Nodes — typography properties</span>
+    </div>
+    <p class="test-desc">
+      Text nodes inside a surface. Tests size, weight, color, align, spacing,
+      and line-height properties.
+    </p>
+
+    <div class="test-grid">
+
+      <div class="code-panel">
+        <div class="code-panel-header">LUMEN source</div>
+        <pre><span class="kw">surface</span> <span class="nm">type-test</span> <span class="pu">{</span>
+  <span class="pr">width</span><span class="pu">:</span>   <span class="vl">100%</span>
+  <span class="pr">height</span><span class="pu">:</span>  <span class="vl">220px</span>
+  <span class="pr">material</span><span class="pu">:</span> <span class="fn">solid</span><span class="pu">(</span><span class="vl">#0f0f1a</span><span class="pu">)</span>
+  <span class="pr">radius</span><span class="pu">:</span>  <span class="vl">12px</span>
+  <span class="pr">padding</span><span class="pu">:</span> <span class="vl">32px</span>
+  <span class="pr">layout</span><span class="pu">:</span>  <span class="vl">column</span>
+  <span class="pr">gap</span><span class="pu">:</span>     <span class="vl">12px</span>
+
+  <span class="kw">text</span> <span class="st">"LUMEN v0.1 Foundation"</span> <span class="pu">{</span>
+    <span class="pr">size</span><span class="pu">:</span>    <span class="vl">28px</span>
+    <span class="pr">weight</span><span class="pu">:</span>  <span class="vl">700</span>
+    <span class="pr">color</span><span class="pu">:</span>   <span class="vl">#f1f5f9</span>
+    <span class="pr">spacing</span><span class="pu">:</span> <span class="vl">-0.5px</span>
+  <span class="pu">}</span>
+
+  <span class="kw">text</span> <span class="st">"A unified declarative UI language."</span> <span class="pu">{</span>
+    <span class="pr">size</span><span class="pu">:</span>    <span class="vl">15px</span>
+    <span class="pr">weight</span><span class="pu">:</span>  <span class="vl">400</span>
+    <span class="pr">color</span><span class="pu">:</span>   <span class="vl">#64748b</span>
+    <span class="pr">height</span><span class="pu">:</span>  <span class="vl">1.6</span>
+  <span class="pu">}</span>
+
+  <span class="kw">text</span> <span class="st">"COMPILE · DECLARE · RENDER"</span> <span class="pu">{</span>
+    <span class="pr">size</span><span class="pu">:</span>      <span class="vl">10px</span>
+    <span class="pr">color</span><span class="pu">:</span>     <span class="vl">#3b82f6</span>
+    <span class="pr">weight</span><span class="pu">:</span>    <span class="vl">600</span>
+    <span class="pr">spacing</span><span class="pu">:</span>   <span class="vl">3px</span>
+    <span class="pr">transform</span><span class="pu">:</span> <span class="vl">uppercase</span>
+  <span class="pu">}</span>
+<span class="pu">}</span></pre>
+      </div>
+
+      <div class="render-panel">
+        <div class="render-panel-header">Rendered output</div>
+        <div class="render-area" id="test-04"></div>
+      </div>
+
+    </div>
+    <div class="status-bar"><span class="status-dot"></span> text · size · weight · color · spacing · height · transform</div>
+  </div>
+
+  <script type="text/lumen" target="test-04">
+    surface type-test {
+      width:   100%
+      height:  220px
+      material: solid(#0f0f1a)
+      radius:  12px
+      padding: 32px
+      layout:  column
+      gap:     12px
+
+      text "LUMEN v0.1 Foundation" {
+        size:    28px
+        weight:  700
+        color:   #f1f5f9
+        spacing: -0.5px
+      }
+
+      text "A unified declarative UI language." {
+        size:   15px
+        weight: 400
+        color:  #64748b
+        height: 1.6
+      }
+
+      text "COMPILE · DECLARE · RENDER" {
+        size:      10px
+        color:     #3b82f6
+        weight:    600
+        spacing:   3px
+        transform: uppercase
+      }
+    }
+  </script>
+
+
+  <hr class="divider">
+
+
+  <!-- ════════════════════════════════════════════════════════
+       TEST 5: LAYOUT SYSTEM
+       ════════════════════════════════════════════════════════ -->
+  <div class="test-section">
+    <div class="test-section-header">
+      <span class="test-number">Test 05</span>
+      <span class="test-title">Layout System — row, column, fill, gap, align, justify</span>
+    </div>
+    <p class="test-desc">
+      A two-column layout where the sidebar has a fixed width and the
+      main area uses <code>fill</code> to consume remaining space.
+      Children in both columns are stacked vertically.
+    </p>
+
+    <div class="test-grid">
+
+      <div class="code-panel">
+        <div class="code-panel-header">LUMEN source</div>
+        <pre><span class="kw">surface</span> <span class="nm">app-shell</span> <span class="pu">{</span>
+  <span class="pr">width</span><span class="pu">:</span>   <span class="vl">100%</span>
+  <span class="pr">height</span><span class="pu">:</span>  <span class="vl">240px</span>
+  <span class="pr">layout</span><span class="pu">:</span>  <span class="vl">row</span>
+  <span class="pr">gap</span><span class="pu">:</span>     <span class="vl">2px</span>
+  <span class="pr">material</span><span class="pu">:</span> <span class="fn">solid</span><span class="pu">(</span><span class="vl">#07070f</span><span class="pu">)</span>
+  <span class="pr">radius</span><span class="pu">:</span>  <span class="vl">12px</span>
+  <span class="pr">overflow</span><span class="pu">:</span> <span class="vl">hidden</span>
+
+  <span class="kw">surface</span> <span class="nm">sidebar</span> <span class="pu">{</span>
+    <span class="pr">width</span><span class="pu">:</span>   <span class="vl">180px</span>
+    <span class="pr">height</span><span class="pu">:</span>  <span class="vl">fill</span>
+    <span class="pr">material</span><span class="pu">:</span> <span class="fn">solid</span><span class="pu">(</span><span class="vl">#111827</span><span class="pu">)</span>
+    <span class="pr">padding</span><span class="pu">:</span> <span class="vl">20px 16px</span>
+    <span class="pr">layout</span><span class="pu">:</span>  <span class="vl">column</span>
+    <span class="pr">gap</span><span class="pu">:</span>     <span class="vl">8px</span>
+
+    <span class="kw">text</span> <span class="st">"LUMEN"</span> <span class="pu">{</span>
+      <span class="pr">size</span><span class="pu">:</span>   <span class="vl">14px</span>
+      <span class="pr">weight</span><span class="pu">:</span> <span class="vl">700</span>
+      <span class="pr">color</span><span class="pu">:</span>  <span class="vl">#e2e8f0</span>
+    <span class="pu">}</span>
+    <span class="kw">text</span> <span class="st">"Surfaces"</span> <span class="pu">{</span>
+      <span class="pr">size</span><span class="pu">:</span>  <span class="vl">12px</span>
+      <span class="pr">color</span><span class="pu">:</span> <span class="vl">#3b82f6</span>
+    <span class="pu">}</span>
+    <span class="kw">text</span> <span class="st">"Materials"</span> <span class="pu">{</span>
+      <span class="pr">size</span><span class="pu">:</span>  <span class="vl">12px</span>
+      <span class="pr">color</span><span class="pu">:</span> <span class="vl">#64748b</span>
+    <span class="pu">}</span>
+    <span class="kw">text</span> <span class="st">"Layout"</span> <span class="pu">{</span>
+      <span class="pr">size</span><span class="pu">:</span>  <span class="vl">12px</span>
+      <span class="pr">color</span><span class="pu">:</span> <span class="vl">#64748b</span>
+    <span class="pu">}</span>
+  <span class="pu">}</span>
+
+  <span class="kw">surface</span> <span class="nm">main</span> <span class="pu">{</span>
+    <span class="pr">width</span><span class="pu">:</span>   <span class="vl">fill</span>
+    <span class="pr">height</span><span class="pu">:</span>  <span class="vl">fill</span>
+    <span class="pr">material</span><span class="pu">:</span> <span class="fn">solid</span><span class="pu">(</span><span class="vl">#0f0f1a</span><span class="pu">)</span>
+    <span class="pr">padding</span><span class="pu">:</span> <span class="vl">24px</span>
+    <span class="pr">layout</span><span class="pu">:</span>  <span class="vl">column</span>
+    <span class="pr">gap</span><span class="pu">:</span>     <span class="vl">12px</span>
+
+    <span class="kw">text</span> <span class="st">"Layout Test"</span> <span class="pu">{</span>
+      <span class="pr">size</span><span class="pu">:</span>   <span class="vl">20px</span>
+      <span class="pr">weight</span><span class="pu">:</span> <span class="vl">600</span>
+      <span class="pr">color</span><span class="pu">:</span>  <span class="vl">#f1f5f9</span>
+    <span class="pu">}</span>
+    <span class="kw">text</span> <span class="st">"sidebar=180px  |  main=fill"</span> <span class="pu">{</span>
+      <span class="pr">size</span><span class="pu">:</span>  <span class="vl">12px</span>
+      <span class="pr">color</span><span class="pu">:</span> <span class="vl">#475569</span>
+    <span class="pu">}</span>
+  <span class="pu">}</span>
+<span class="pu">}</span></pre>
+      </div>
+
+      <div class="render-panel">
+        <div class="render-panel-header">Rendered output</div>
+        <div class="render-area" id="test-05"></div>
+      </div>
+
+    </div>
+    <div class="status-bar"><span class="status-dot"></span> layout:row · layout:column · fill · gap · padding · overflow:hidden</div>
+  </div>
+
+  <script type="text/lumen" target="test-05">
+    surface app-shell {
+      width:   100%
+      height:  240px
+      layout:  row
+      gap:     2px
+      material: solid(#07070f)
+      radius:  12px
+      overflow: hidden
+
+      surface sidebar {
+        width:   180px
+        height:  fill
+        material: solid(#111827)
+        padding: 20px 16px
+        layout:  column
+        gap:     8px
+
+        text "LUMEN" {
+          size:   14px
+          weight: 700
+          color:  #e2e8f0
+        }
+        text "Surfaces" {
+          size:  12px
+          color: #3b82f6
+        }
+        text "Materials" {
+          size:  12px
+          color: #64748b
+        }
+        text "Layout" {
+          size:  12px
+          color: #64748b
+        }
+      }
+
+      surface main {
+        width:   fill
+        height:  fill
+        material: solid(#0f0f1a)
+        padding: 24px
+        layout:  column
+        gap:     12px
+
+        text "Layout Test" {
+          size:   20px
+          weight: 600
+          color:  #f1f5f9
+        }
+        text "sidebar=180px  |  main=fill" {
+          size:  12px
+          color: #475569
+        }
+      }
+    }
+  </script>
+
+
+  <hr class="divider">
+
+
+  <!-- ════════════════════════════════════════════════════════
+       TEST 6: GLASS EFFECT + SHADOW + BORDER
+       ════════════════════════════════════════════════════════ -->
+  <div class="test-section">
+    <div class="test-section-header">
+      <span class="test-number">Test 06</span>
+      <span class="test-title">Glass Material — backdrop-filter, border, shadow</span>
+    </div>
+    <p class="test-desc">
+      A gradient backdrop with a floating glass surface centred over it.
+      Tests the <code>glass()</code> material function, shadow, and border properties.
+    </p>
+
+    <div class="test-grid">
+
+      <div class="code-panel">
+        <div class="code-panel-header">LUMEN source</div>
+        <pre><span class="kw">surface</span> <span class="nm">backdrop</span> <span class="pu">{</span>
+  <span class="pr">width</span><span class="pu">:</span>   <span class="vl">100%</span>
+  <span class="pr">height</span><span class="pu">:</span>  <span class="vl">240px</span>
+  <span class="pr">material</span><span class="pu">:</span> <span class="fn">gradient</span><span class="pu">(</span><span class="vl">135deg, #0f0f1a, #1e3a5f</span><span class="pu">)</span>
+  <span class="pr">radius</span><span class="pu">:</span>  <span class="vl">12px</span>
+  <span class="pr">layout</span><span class="pu">:</span>  <span class="vl">row</span>
+  <span class="pr">align</span><span class="pu">:</span>   <span class="vl">center</span>
+  <span class="pr">justify</span><span class="pu">:</span> <span class="vl">center</span>
+
+  <span class="kw">surface</span> <span class="nm">glass-card</span> <span class="pu">{</span>
+    <span class="pr">width</span><span class="pu">:</span>   <span class="vl">280px</span>
+    <span class="pr">height</span><span class="pu">:</span>  <span class="vl">160px</span>
+    <span class="pr">material</span><span class="pu">:</span> <span class="fn">glass</span><span class="pu">(</span><span class="vl">#ffffff, 0.06</span><span class="pu">)</span>
+    <span class="pr">border</span><span class="pu">:</span>  <span class="vl">1px solid rgba(255,255,255,0.15)</span>
+    <span class="pr">shadow</span><span class="pu">:</span>  <span class="vl">0 16px 48px rgba(0,0,0,0.5)</span>
+    <span class="pr">radius</span><span class="pu">:</span>  <span class="vl">16px</span>
+    <span class="pr">padding</span><span class="pu">:</span> <span class="vl">28px</span>
+    <span class="pr">layout</span><span class="pu">:</span>  <span class="vl">column</span>
+    <span class="pr">align</span><span class="pu">:</span>   <span class="vl">center</span>
+    <span class="pr">justify</span><span class="pu">:</span> <span class="vl">center</span>
+    <span class="pr">gap</span><span class="pu">:</span>     <span class="vl">8px</span>
+
+    <span class="kw">text</span> <span class="st">"Glass Surface"</span> <span class="pu">{</span>
+      <span class="pr">size</span><span class="pu">:</span>   <span class="vl">20px</span>
+      <span class="pr">weight</span><span class="pu">:</span> <span class="vl">600</span>
+      <span class="pr">color</span><span class="pu">:</span>  <span class="vl">rgba(255,255,255,0.9)</span>
+      <span class="pr">align</span><span class="pu">:</span>  <span class="vl">center</span>
+    <span class="pu">}</span>
+    <span class="kw">text</span> <span class="st">"backdrop-filter: blur(12px)"</span> <span class="pu">{</span>
+      <span class="pr">size</span><span class="pu">:</span>  <span class="vl">11px</span>
+      <span class="pr">color</span><span class="pu">:</span> <span class="vl">rgba(255,255,255,0.4)</span>
+      <span class="pr">align</span><span class="pu">:</span> <span class="vl">center</span>
+    <span class="pu">}</span>
+  <span class="pu">}</span>
+<span class="pu">}</span></pre>
+      </div>
+
+      <div class="render-panel">
+        <div class="render-panel-header">Rendered output</div>
+        <div class="render-area" id="test-06"></div>
+      </div>
+
+    </div>
+    <div class="status-bar"><span class="status-dot"></span> glass() · border · shadow · align:center · justify:center</div>
+  </div>
+
+  <script type="text/lumen" target="test-06">
+    surface backdrop {
+      width:   100%
+      height:  240px
+      material: gradient(135deg, #0f0f1a, #1e3a5f)
+      radius:  12px
+      layout:  row
+      align:   center
+      justify: center
+
+      surface glass-card {
+        width:   280px
+        height:  160px
+        material: glass(#ffffff, 0.06)
+        border:  1px solid rgba(255,255,255,0.15)
+        shadow:  0 16px 48px rgba(0,0,0,0.5)
+        radius:  16px
+        padding: 28px
+        layout:  column
+        align:   center
+        justify: center
+        gap:     8px
+
+        text "Glass Surface" {
+          size:   20px
+          weight: 600
+          color:  rgba(255,255,255,0.9)
+          align:  center
+        }
+        text "backdrop-filter: blur(12px)" {
+          size:  11px
+          color: rgba(255,255,255,0.4)
+          align: center
+        }
+      }
+    }
+  </script>
+
+
+  <hr class="divider">
+
+
+  <!-- ════════════════════════════════════════════════════════
+       TEST 7: COMPOSITION — Full Mini Dashboard
+       ════════════════════════════════════════════════════════ -->
+  <div class="test-section">
+    <div class="test-section-header">
+      <span class="test-number">Test 07</span>
+      <span class="test-title">Composition — Full Mini Dashboard</span>
+    </div>
+    <p class="test-desc">
+      All foundation features combined: named materials, nested surfaces,
+      row and column layouts, fill sizing, glass effects, and text nodes.
+      This is what LUMEN v0.1 can render with ~50 lines of source.
+    </p>
+
+    <div id="test-07-render"></div>
+    <div class="status-bar"><span class="status-dot"></span>
+      All foundation features combined — named materials · nesting · fill · glass · text · layout
+    </div>
+  </div>
+
+  <script type="text/lumen" target="test-07-render">
+
+    // ── Materials ──────────────────────────────────────────────────────────
+    material bg-deep {
+      color: #07070f
+    }
+
+    material surface-dark {
+      color:  #0d0d1a
+      radius: 12px
+      border: 1px solid rgba(255,255,255,0.05)
+    }
+
+    material surface-mid {
+      color:  #111827
+      radius: 10px
+      border: 1px solid rgba(255,255,255,0.06)
+    }
+
+    material surface-accent {
+      color:  #1e3a5f
+      radius: 8px
+      border: 1px solid rgba(59,130,246,0.25)
+    }
+
+    // ── Dashboard ──────────────────────────────────────────────────────────
+    surface dashboard {
+      width:   100%
+      height:  340px
+      use:     bg-deep
+      layout:  row
+      gap:     2px
+      radius:  14px
+      overflow: hidden
+
+      // ── Sidebar ─────────────────────────────────────────────────────────
+      surface sidebar {
+        width:   190px
+        height:  fill
+        use:     surface-dark
+        padding: 20px 16px
+        layout:  column
+        gap:     6px
+
+        text "LUMEN" {
+          size:    16px
+          weight:  800
+          color:   #f1f5f9
+          spacing: 1px
+        }
+        text "v0.1 Foundation" {
+          size:  10px
+          color: #3b82f6
+          spacing: 1px
+        }
+
+        surface divider-line {
+          width:   100%
+          height:  1px
+          material: solid(rgba(255,255,255,0.06))
+          margin:  8px 0
+        }
+
+        text "Surfaces" {
+          size:  12px
+          color: #cbd5e1
+        }
+        text "Materials" {
+          size:  12px
+          color: #475569
+        }
+        text "Layout" {
+          size:  12px
+          color: #475569
+        }
+        text "Text" {
+          size:  12px
+          color: #475569
+        }
+      }
+
+      // ── Main Area ────────────────────────────────────────────────────────
+      surface main {
+        width:   fill
+        height:  fill
+        use:     surface-dark
+        padding: 20px
+        layout:  column
+        gap:     14px
+
+        // Top stats row
+        surface stats-row {
+          width:  100%
+          height: 80px
+          layout: row
+          gap:    10px
+
+          surface stat-a {
+            width:   fill
+            height:  fill
+            use:     surface-mid
+            padding: 14px
+            layout:  column
+            gap:     4px
+
+            text "Surfaces" {
+              size:  10px
+              color: #475569
+              spacing: 1px
+              transform: uppercase
+            }
+            text "01" {
+              size:   24px
+              weight: 700
+              color:  #e2e8f0
+            }
+          }
+
+          surface stat-b {
+            width:   fill
+            height:  fill
+            use:     surface-accent
+            padding: 14px
+            layout:  column
+            gap:     4px
+
+            text "Materials" {
+              size:  10px
+              color: rgba(59,130,246,0.6)
+              spacing: 1px
+              transform: uppercase
+            }
+            text "04" {
+              size:   24px
+              weight: 700
+              color:  #93c5fd
+            }
+          }
+
+          surface stat-c {
+            width:   fill
+            height:  fill
+            use:     surface-mid
+            padding: 14px
+            layout:  column
+            gap:     4px
+
+            text "Text Nodes" {
+              size:  10px
+              color: #475569
+              spacing: 1px
+              transform: uppercase
+            }
+            text "12" {
+              size:   24px
+              weight: 700
+              color:  #e2e8f0
+            }
+          }
+        }
+
+        // Content card
+        surface content-card {
+          width:   100%
+          height:  fill
+          material: glass(#3b82f6, 0.04)
+          border:  1px solid rgba(59,130,246,0.15)
+          radius:  10px
+          padding: 20px
+          layout:  column
+          gap:     8px
+
+          text "Foundation Complete" {
+            size:   18px
+            weight: 700
+            color:  #f1f5f9
+          }
+          text "All core constructs operational. Syntax defined, compiler running, test suite passing." {
+            size:   12px
+            color:  #64748b
+            height: 1.6
+          }
+        }
+      }
+    }
+
+  </script>
+
+
+  <!-- ════════════════════════════════════════════════════════
+       FOOTER
+       ════════════════════════════════════════════════════════ -->
+  <div style="margin-top:64px; padding-top:24px; border-top:1px solid rgba(255,255,255,0.05);
+              display:flex; justify-content:space-between; align-items:center;
+              font-size:11px; color:#374151; letter-spacing:1px;">
+    <span>LUMEN TEST SUITE — tests/test-surfaces.html</span>
+    <span>© Gfibion @SPENCER WRITERS</span>
+  </div>
+
+</body>
+</html>
